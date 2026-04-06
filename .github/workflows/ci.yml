@@ -1,0 +1,79 @@
+name: CI — Validacao do System Code
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    name: Validar Configuracoes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar settings.json
+        run: |
+          echo "Validando settings.json..."
+          if [ ! -f settings.json ]; then
+            echo "ERRO: settings.json nao encontrado"
+            exit 1
+          fi
+          python3 -c "
+          import json, sys
+          try:
+              with open('settings.json') as f:
+                  data = json.load(f)
+              print('settings.json: JSON valido')
+              if 'permissions' not in data:
+                  print('AVISO: campo permissions nao encontrado')
+              else:
+                  perms = data['permissions'].get('allow', [])
+                  print(f'Permissoes configuradas: {len(perms)}')
+          except json.JSONDecodeError as e:
+              print(f'ERRO: JSON invalido — {e}')
+              sys.exit(1)
+          "
+
+      - name: Verificar .env.example
+        run: |
+          if [ -f .env.example ]; then
+            echo ".env.example encontrado: OK"
+            echo "Variaveis definidas: $(grep -c '=' .env.example)"
+          else
+            echo "AVISO: .env.example nao encontrado"
+          fi
+
+      - name: Verificar .env nao versionado
+        run: |
+          if [ -f .env ]; then
+            echo "ERRO CRITICO: arquivo .env esta sendo versionado com credenciais!"
+            exit 1
+          fi
+          echo ".env nao versionado: OK"
+
+      - name: Verificar scripts executaveis
+        run: |
+          for script in scripts/*.sh; do
+            if [ -f "$script" ]; then
+              bash -n "$script" && echo "$script: sintaxe OK" || echo "$script: ERRO de sintaxe"
+            fi
+          done
+
+      - name: Verificar webhook-listener.js
+        run: |
+          if [ -f scripts/webhook-listener.js ]; then
+            node --check scripts/webhook-listener.js && echo "webhook-listener.js: sintaxe OK"
+          fi
+
+      - name: Resumo
+        run: |
+          echo ""
+          echo "============================================"
+          echo "Validacao concluida"
+          echo "Projeto: System Code"
+          echo "Data: $(date '+%d/%m/%Y %H:%M')"
+          echo "============================================"
