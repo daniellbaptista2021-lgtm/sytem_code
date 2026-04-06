@@ -1,0 +1,89 @@
+name: CI - System Code
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    name: Validar Configuracoes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar settings.json
+        run: |
+          echo "Validando settings.json..."
+          python3 -m json.tool settings.json > /dev/null && echo "settings.json OK" || exit 1
+
+      - name: Validar plugins/installed_plugins.json
+        run: |
+          echo "Validando installed_plugins.json..."
+          python3 -m json.tool plugins/installed_plugins.json > /dev/null && echo "installed_plugins.json OK" || exit 1
+
+      - name: Validar plugins/known_marketplaces.json
+        run: |
+          echo "Validando known_marketplaces.json..."
+          python3 -m json.tool plugins/known_marketplaces.json > /dev/null && echo "known_marketplaces.json OK" || exit 1
+
+      - name: Verificar arquivos obrigatorios
+        run: |
+          echo "Verificando arquivos essenciais..."
+          required_files=("settings.json" ".env.example" "setup.sh" "scripts/health.sh" "scripts/webhook-listener.js" "README.md")
+          for file in "${required_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "$file - OK"
+            else
+              echo "ERRO: $file nao encontrado"
+              exit 1
+            fi
+          done
+
+      - name: Verificar .env nao versionado
+        run: |
+          if [ -f ".env" ]; then
+            echo "ERRO: Arquivo .env no repositorio. Credenciais expostas!"
+            exit 1
+          else
+            echo ".env nao versionado - OK"
+          fi
+
+      - name: Verificar sintaxe shell scripts
+        run: |
+          bash -n setup.sh && echo "setup.sh - OK"
+          bash -n scripts/health.sh && echo "health.sh - OK"
+
+      - name: Validar webhook-listener.js
+        run: |
+          node --check scripts/webhook-listener.js && echo "webhook-listener.js - OK"
+
+  security:
+    name: Verificacao de Seguranca
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Verificar credenciais expostas
+        run: |
+          echo "Scanning por credenciais expostas..."
+          patterns=("ghp_" "sk-" "password=" "secret=" "api_key=")
+          found=0
+          for pattern in "${patterns[@]}"; do
+            result=$(grep -r "$pattern" --include="*.json" --include="*.js" --include="*.sh" . 2>/dev/null | grep -v ".env.example" | grep -v "ci.yml" || true)
+            if [ -n "$result" ]; then
+              echo "ALERTA: Credencial exposta com padrao '$pattern':"
+              echo "$result"
+              found=1
+            fi
+          done
+          if [ $found -eq 0 ]; then
+            echo "Nenhuma credencial exposta - OK"
+          else
+            exit 1
+          fi
