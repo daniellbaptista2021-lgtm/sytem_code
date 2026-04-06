@@ -1,0 +1,34 @@
+{
+  "enabledPlugins": {
+    "telegram@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(.*)",
+      "Read(.*)",
+      "Edit(.*)",
+      "Write(.*)",
+      "WebFetch(.*)",
+      "WebSearch(.*)",
+      "Grep(.*)",
+      "Glob(.*)",
+      "NotebookEdit(.*)",
+      "Agent(.*)",
+      "TaskCreate(.*)",
+      "TaskUpdate(.*)",
+      "TaskGet(.*)",
+      "TaskList(.*)",
+      "TaskStop(.*)",
+      "TaskOutput(.*)",
+      "CronCreate(.*)",
+      "CronDelete(.*)",
+      "CronList(.*)",
+      "Skill(.*)",
+      "ToolSearch(.*)",
+      "mcp__plugin_telegram_telegram__reply",
+      "mcp__plugin_telegram_telegram__react",
+      "mcp__plugin_telegram_telegram__edit_message",
+      "mcp__plugin_telegram_telegram__download_attachment"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+# Arquivos sensiveis
+plugins/install-counts-cache.json
+plugins/cache/
+plugins/data/
+
+# Credenciais
+*.credentials.json
+.credentials
+plugins/marketplaces/
+plugins/marketplaces/
